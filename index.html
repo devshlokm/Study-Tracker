@@ -281,15 +281,15 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, query, where, getDocs, deleteDoc, updateDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Firebase Config ---
         const firebaseConfig = {
-          apiKey: "AIzaSyAv5xglpiRrB4VgouaNah6yx5y76abC44g",
+          apiKey: "AIzaSyDjdKhtJHZgRF6PcBC5BiHpk7TcH1LDLa4", // This should be your new, restricted key
           authDomain: "zenith-study-tracker.firebaseapp.com",
           projectId: "zenith-study-tracker",
-          storageBucket: "zenith-study-tracker.firebasestorage.app",
+          storageBucket: "zenith-study-tracker.appspot.com",
           messagingSenderId: "139224303940",
           appId: "1:139224303940:web:01bd2df00e0d90de146f11",
           measurementId: "G-ERZN5GL8K2"
@@ -299,7 +299,7 @@
         let db, auth, userId;
         let timerInterval = null;
         let totalSeconds = 0;
-        const GOAL_SECONDS = 8 * 60 * 60; // 8 hours
+        const GOAL_SECONDS = 8 * 60 * 60;
         let isRunning = false;
         let goalReachedToday = false;
         let currentDate = new Date();
@@ -373,7 +373,7 @@
         };
 
         // --- Gemini API Functions ---
-        const API_KEY = ""; // Provided by environment
+        const API_KEY = ""; // Kept empty for security, will be handled by environment if needed
         const API_URL_BASE = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
 
         async function callGeminiAPI(payload) {
@@ -461,9 +461,11 @@
         const signInWithGoogle = async () => {
             const provider = new GoogleAuthProvider();
             try {
+                await setPersistence(auth, browserLocalPersistence);
                 await signInWithPopup(auth, provider);
             } catch (error) {
                 console.error("Google Sign-In failed:", error);
+                alert(`Sign-in failed. Error: ${error.message}`);
             }
         };
 
@@ -746,6 +748,13 @@
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
+            
+            // Set persistence before the auth state listener
+            try {
+                await setPersistence(auth, browserLocalPersistence);
+            } catch (error) {
+                console.error("Setting persistence failed", error);
+            }
 
             onAuthStateChanged(auth, async (user) => {
                 unsubscribes.forEach(unsub => unsub());
