@@ -464,8 +464,12 @@
                 await setPersistence(auth, browserLocalPersistence);
                 await signInWithPopup(auth, provider);
             } catch (error) {
-                console.error("Google Sign-In failed:", error);
-                alert(`Sign-in failed. Error: ${error.message}`);
+                if (error.code !== 'auth/popup-closed-by-user') {
+                    console.error("Google Sign-In failed:", error);
+                    alert(`Sign-in failed. Error: ${error.message}`);
+                } else {
+                    console.log("Sign-in popup closed by user.");
+                }
             }
         };
 
