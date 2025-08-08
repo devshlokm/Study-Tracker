@@ -284,10 +284,16 @@
         import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, query, where, getDocs, deleteDoc, updateDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase Config (Provided by Canvas Environment) ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-            ? JSON.parse(__firebase_config) 
-            : null;
+        // --- Firebase Config ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyDjdKhtJHZgRF6PcBC5BiHpk7TcH1LDLa4",
+          authDomain: "zenith-study-tracker.firebaseapp.com",
+          projectId: "zenith-study-tracker",
+          storageBucket: "zenith-study-tracker.firebasestorage.app",
+          messagingSenderId: "139224303940",
+          appId: "1:139224303940:web:01bd2df00e0d90de146f11",
+          measurementId: "G-ERZN5GL8K2"
+        };
 
         // --- App State ---
         let db, auth, userId;
