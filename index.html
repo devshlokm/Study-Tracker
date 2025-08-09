@@ -185,7 +185,7 @@
                 <!-- Left Column: Timer and Controls -->
                 <div class="lg:col-span-2 space-y-8">
                     <div class="card p-8 text-center flex flex-col items-center justify-center">
-                        <div class="flex items-center space-x-4 mb-4">
+                        <div class="flex items-center justify-around w-full max-w-md mb-4">
                             <h2 class="text-2xl font-bold">Daily Goal: 8 Hours</h2>
                             <div class="text-center">
                                 <p class="text-lg">Streak</p>
@@ -219,10 +219,11 @@
                         <div class="card p-6">
                             <div class="flex items-center justify-between mb-4">
                                <h3 class="text-xl font-bold">Today's Tasks</h3>
-                               <button id="planDayBtn" class="btn btn-secondary text-sm py-1 px-3 flex items-center space-x-2">
+                               <button id="planDayBtn" class="btn btn-secondary text-sm py-1 px-3 flex items-center space-x-2" disabled>
                                    <span>✨ Plan My Day</span>
                                </button>
                             </div>
+                            <p class="text-xs text-muted -mt-3 mb-3 text-right">Temporarily disabled due to API key security.</p>
                             <div class="flex mb-4">
                                 <input type="text" id="todoInput" class="w-full p-2 border rounded-l-lg focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent transition" placeholder="Add a new task...">
                                 <button id="addTodoBtn" class="btn btn-primary rounded-l-none">Add</button>
@@ -286,7 +287,7 @@
 
         // --- Firebase Config ---
         const firebaseConfig = {
-        apiKey: "AIzaSyBFWQotEt-1nIGFG6khfDWIB_Z8YFTQ0hM", // This should be your new, restricted key
+          apiKey: "AIzaSyAv5xglpiRrB4VgouaNah6yx5y76abC44g",
           authDomain: "zenith-study-tracker.firebaseapp.com",
           projectId: "zenith-study-tracker",
           storageBucket: "zenith-study-tracker.appspot.com",
@@ -403,60 +404,6 @@
             prepTipEl.textContent = tip || "Master the STAR method for behavioral questions. Practice telling your project stories in this format.";
         }
 
-        async function planMyDay() {
-            if (!userId) return;
-            showModal(loadingModal);
-            planDayBtn.disabled = true;
-
-            const today = getTodayString();
-            const q = query(collection(db, `users/${userId}/todos`), where("date", "==", today));
-            const querySnapshot = await getDocs(q);
-            
-            const existingTasks = [];
-            querySnapshot.forEach(doc => existingTasks.push({ id: doc.id, text: doc.data().text }));
-
-            if (existingTasks.length === 0) {
-                hideModal(loadingModal);
-                planDayBtn.disabled = false;
-                alert("Please add at least one high-level task before planning your day.");
-                return;
-            }
-
-            const taskListString = existingTasks.map(t => t.text).join(", ");
-            const prompt = `You are an expert career coach specializing in Google interviews. A user has provided a list of high-level study tasks for the day. Your job is to break these down into smaller, concrete, and actionable sub-tasks. For each high-level task, provide 2-4 sub-tasks. Here are the tasks: [${taskListString}].`;
-            
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: { type: "OBJECT", properties: { tasks: { type: "ARRAY", items: { type: "OBJECT", properties: { text: { type: "STRING" } }, required: ["text"] } } } }
-                }
-            };
-            
-            const resultText = await callGeminiAPI(payload);
-            if (resultText) {
-                try {
-                    const { tasks: newTasks } = JSON.parse(resultText);
-                    if (newTasks?.length > 0) {
-                        const batch = writeBatch(db);
-                        existingTasks.forEach(task => batch.delete(doc(db, `users/${userId}/todos`, task.id)));
-                        newTasks.forEach(task => {
-                            const newDocRef = doc(collection(db, `users/${userId}/todos`));
-                            batch.set(newDocRef, { text: task.text, completed: false, date: today });
-                        });
-                        await batch.commit();
-                    }
-                } catch (e) {
-                    console.error("Failed to process Gemini response:", e);
-                    alert("Could not automatically plan your day.");
-                }
-            } else {
-                 alert("Gemini could not generate a plan. Please try again.");
-            }
-            hideModal(loadingModal);
-            planDayBtn.disabled = false;
-        }
-
         // --- Auth Logic ---
         const signInWithGoogle = async () => {
             const provider = new GoogleAuthProvider();
@@ -466,7 +413,6 @@
             } catch (error) {
                 if (error.code !== 'auth/popup-closed-by-user') {
                     console.error("Google Sign-In failed:", error);
-                    alert(`Sign-in failed. Error: ${error.message}`);
                 } else {
                     console.log("Sign-in popup closed by user.");
                 }
@@ -483,7 +429,11 @@
 
         // --- Theme Logic ---
         function applyTheme(theme) {
-            document.documentElement.classList.toggle('dark', theme === 'dark');
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
             themeToggle.checked = theme === 'dark';
         }
 
@@ -717,14 +667,18 @@
         }
 
         // --- Event Listeners ---
-        themeToggle.addEventListener('change', (e) => saveThemePreference(e.target.checked ? 'dark' : 'light'));
+        themeToggle.addEventListener('change', (e) => {
+            const newTheme = e.target.checked ? 'dark' : 'light';
+            applyTheme(newTheme);
+            saveThemePreference(newTheme);
+        });
         signInBtn.addEventListener('click', signInWithGoogle);
         signOutBtn.addEventListener('click', signOutUser);
         startPauseBtn.addEventListener('click', () => { isRunning ? pauseTimer() : startTimer(); });
         resetBtn.addEventListener('click', resetTimer);
         addTodoBtn.addEventListener('click', addTodo);
         todoInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addTodo(); });
-        planDayBtn.addEventListener('click', planMyDay);
+        planDayBtn.addEventListener('click', () => alert("This feature is temporarily disabled while we improve our API security. Coming soon!"));
         prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
         nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
         closeModalBtn.addEventListener('click', () => hideModal(rewardModal));
@@ -753,7 +707,6 @@
             db = getFirestore(app);
             auth = getAuth(app);
             
-            // Set persistence before the auth state listener
             try {
                 await setPersistence(auth, browserLocalPersistence);
             } catch (error) {
@@ -797,4 +750,3 @@
     </script>
 </body>
 </html>
-
